@@ -2,7 +2,7 @@ from predict import state_predict
 import inspect
 import numpy as np
 import random
-from utils import get_env, readParser
+from utils import get_env, readParser, excavator_arm_fk
 import inspect
 import os
 import random
@@ -278,8 +278,20 @@ class DynamicsModel():
             if test_prediction_s.device != self.device:
                 test_prediction_s = test_prediction_s.to(self.device)
             test_cost_samples += (batch_size)
-            print(f"[{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}][EnsembleDynamicsModel] "
-                    f"test costs samples num {test_cost_samples} / {len(test_dataset)}")
+            # print(f"[{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}][EnsembleDynamicsModel] "
+                    # f"test costs samples num {test_cost_samples} / {len(test_dataset)}")
+            
+            predict_end = excavator_arm_fk(next_state.cpu().squeeze()[:, :3])
+            real_end =  excavator_arm_fk(next_s[:, -1, :3])
+            real_prev_end = excavator_arm_fk(next_s[:, -2, :3])
+            end_distance = torch.norm(predict_end - real_end, dim=-1)
+            real_end_distance = torch.norm(real_end - real_prev_end, dim=-1)
+            ratio_end_distance = end_distance / (real_end_distance)
+            score_end_dist = 100 - 100 * (end_distance.mean() / 1000)
+            score_ratio_end_dist = 100 - 100 * (ratio_end_distance.mean() / 1000)
+            total_score = 0.5 * (score_end_dist + score_ratio_end_dist)
+            print(f'score_end_dist: {score_end_dist:.5f}, score_ratio: {score_ratio_end_dist:.5f}, total_score: {total_score:.5f}')
+
 
 def model_eval():
     torch.set_printoptions(precision=7)
@@ -315,7 +327,6 @@ def model_eval():
     env_model.env = world_model_env
     test_csv_file_names, test_dfs_map = test_dataset4_file_load.csv_file_names, test_dataset4_file_load.dfs_map
     env_model.eval(test_csv_file_names, test_dfs_map, 1, args.world_model_train_batch_size, **kwargs)
-
 
 
 if __name__ == '__main__':
