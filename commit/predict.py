@@ -117,8 +117,8 @@ model = WorldModelDecisionTransformerModel(model_config)
 # load model if needed 
 from pathlib import Path
 model.eval()
-# world_model_path = str(Path(__file__).parent.absolute() / 'world_models/default/world_model_361.0_00017k.pth') # note: 这里需要引入相对路径
-world_model_path = 'world_model_361.0_00017k.pth'
+world_model_path = str(Path(__file__).parent.absolute() / 'world_model_361.0_00017k.pth') # note: 这里需要引入相对路径
+# world_model_path = './world_model_361.0_00017k.pth'
 ckpt = torch.load(world_model_path)
 model.load_state_dict(ckpt['model_state'])
 
